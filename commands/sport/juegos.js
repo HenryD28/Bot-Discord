@@ -1,6 +1,7 @@
 const { default: axios } = require('axios');
-const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ComponentType } = require('discord.js');
 const db = require('../../db');
+// const db = require('../../db');
 
 const createEmbed = (team) => {
 
@@ -34,7 +35,7 @@ module.exports = {
    * @returns
    */
   async execute(interaction) {
-    await interaction.deferReply();
+    // await interaction.deferReply();
     const name = interaction.options.getString('nombre');
     const id = interaction.user.id;
     const options = {
@@ -69,31 +70,46 @@ module.exports = {
       const response = await axios.request(options);
       const deporte = response.data.body;
       const equipo = deporte.find(team => team.teamName.toLowerCase() === name);
+      const idTeam = equipo.teamID;
+      console.log(idTeam);
       const embed = createEmbed(equipo);
-      const favorite = await interaction.editReply({
+      const favorite = await interaction.reply({
         embeds: [embed],
         components: [row],
       });
 
-      const collectorFilter = i => i.user.id === interaction.user.id;
-      const confirmation = await favorite.awaitMessageComponent({ filter: collectorFilter, time: 3_600_000 });
+      // const date = db.prepare(`
+      //  SELECT *
+      //  FROM equiposFav
+      //  WHERE discord_id = ?
+      //  `).all(id);
+      // console.log(date);
+      // if (date[0].teamID[0] === idTeam && date[0].team[0] === name && date[0].discord_id === id) {
+      //   console.log('comprobando');
+      // }
 
-      db.prepare(`
-      INSERT INTO team (team, discord_id)
-      VALUES (?,?)
-      `).run(name, id);
-      const remove = await confirmation.update({
-        content: 'Se a añadido',
-        components:  [deleteRow],
-      });
-      const p = await remove.awaitMessageComponent({ filter: collectorFilter, time: 3_600_000 });
+      const collector = favorite.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3_600_000 });
+      collector.on('collect', async i => {
+        const newID = i.user.id;
 
-      db.prepare(`
-          DELETE FROM team
+        if (i.customId === 'add' && newID === id) {
+          db.prepare(`
+          INSERT INTO equiposFav (teamID, team, discord_id)
+          VALUES (?,?,?)
+          `).run(idTeam, name, id);
+          await i.update({
+            components:[ deleteRow ],
+          });
+        } else if (i.customId === 'delete' && newID === id) {
+          db.prepare(`
+          DELETE FROM equiposFav
           WHERE discord_id = ?
-          `)
-        .run(id);
-      await p.update({ content: 'Eliminado', embeds: [embed], components: [row] });
+          `).run(id);
+          await i.update({
+            components:[ row ],
+          });
+        }
+      });
 
 
     } catch (error) {

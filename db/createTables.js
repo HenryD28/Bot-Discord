@@ -29,11 +29,11 @@ const createNotesTable = async () => {
 };
 
 const createTeamTable = async () => {
-  db.prepare('DROP TABLE IF EXISTS team').run();
+  db.prepare('DROP TABLE IF EXISTS equiposFav').run();
 
   db.prepare(`
-  CREATE TABLE IF NOT EXISTS team (
-    team_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  CREATE TABLE IF NOT EXISTS equiposFav (
+    teamID INTEGER,
     team TEXT NOT NULL,
     discord_id TEXT NOT NULL,
     FOREIGN KEY (discord_id)
