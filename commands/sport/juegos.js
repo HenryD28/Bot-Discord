@@ -35,7 +35,7 @@ module.exports = {
    * @returns
    */
   async execute(interaction) {
-    // await interaction.deferReply();
+    await interaction.deferReply();
     const name = interaction.options.getString('nombre');
     const id = interaction.user.id;
     const options = {
@@ -73,7 +73,7 @@ module.exports = {
       const idTeam = equipo.teamID;
       console.log(idTeam);
       const embed = createEmbed(equipo);
-      const favorite = await interaction.reply({
+      const favorite = await interaction.editReply({
         embeds: [embed],
         components: [row],
       });
